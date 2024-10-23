@@ -8,7 +8,7 @@ import Footer from './components/layout/Footer';
 
 function App() {
     // Crie uma nova conexão WebSocket
-    const socket = new WebSocket('ws://<SEU_IP_ESP8266>:81'); // Substitua pelo IP do ESP8266
+    const socket = new WebSocket('ws://192.168.100.83:81'); // Substitua pelo IP do ESP8266
 
     // Evento quando a conexão for aberta
     socket.onopen = function(event) {
@@ -26,8 +26,8 @@ function App() {
             <Navbar />
             <Routes>
                 <Route path="/" element={<Container><Home /></Container>} />
-                <Route path="/login" element={<Container><Login socket={socket} /></Container>} /> {/* Passando o socket */}
-                <Route path="/cadastro" element={<Container><Cadastro socket={socket} /></Container>} />
+                <Route path="/login" element={<Container><Login/></Container>} /> {/* Passando o socket */}
+                <Route path="/cadastro" element={<Container><Cadastro/></Container>} />
             </Routes>
             <Footer />
         </Router>

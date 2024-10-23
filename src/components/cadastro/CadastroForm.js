@@ -1,12 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Input from '../form/Input';
 import Select from '../form/Select';
 import SubmitButton from '../form/SubmitButton';
 import styles from './CadastroForm.module.css';
 
-function CadastroForm({ btnText, socket }) {
-    const [isWaiting, setIsWaiting] = useState(false);
-    const [fingerprintData, setFingerprintData] = useState(null);
+function CadastroForm({ btnText }) {
+    const [isWaiting, setIsWaiting] = useState(false); 
+    const [fingerprintData, setFingerprintData] = useState(null); 
+    const [ws, setWs] = useState(null); 
 
     const sexoOptions = [
         { value: '', label: 'Selecione o sexo' },
@@ -14,24 +15,37 @@ function CadastroForm({ btnText, socket }) {
         { value: 'feminino', label: 'Feminino' }
     ];
 
-    // Função para enviar os dados do cadastro e acionar o recebimento da digital
+useEffect(() => {
+    // Ajusta a URL do WebSocket para se conectar ao ESP8266
+    const socket = new WebSocket('ws://192.168.100.83:81'); 
+
+    setWs(socket);
+
+    socket.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        if (data.success) {
+            setFingerprintData("Cadastro concluído com sucesso!");
+            setIsWaiting(false);
+            resetForm(); // Reseta o formulário após o sucesso
+        } else {
+            setFingerprintData(data.message); // Exibe a mensagem de erro ou de espera
+        }
+    };
+
+    return () => {
+        socket.close();
+    };
+}, []);
+
     const sendDataToESP = (formData) => {
-        setIsWaiting(true);
-        const jsonData = JSON.stringify(formData);
-        socket.send(`cadastrar ${jsonData}`); // Enviar a mensagem de cadastro
-
-        // Lógica para receber a resposta do WebSocket
-        socket.onmessage = function(event) {
-            const data = JSON.parse(event.data);
-            setFingerprintData(data.message); // Armazena a mensagem recebida do ESP8266
-
-            if (data.success) {
-                alert("Cadastro concluído com sucesso!"); // Mensagem de sucesso
-                resetForm(); // Reseta o formulário
-            } else {
-                setFingerprintData("Aguardando digital válida...");
-            }
-        };
+        if (ws) {
+            // Send form data to the WebSocket server
+            ws.send(JSON.stringify({ action: 'cadastrar', ...formData }));
+            setFingerprintData("Aguardando digital válida...");
+            setIsWaiting(true); 
+        } else {
+            console.error('WebSocket não está disponível');
+        }
     };
 
     const handleSubmit = (e) => {
@@ -43,7 +57,7 @@ function CadastroForm({ btnText, socket }) {
             sexo: e.target.sexo.value,
         };
 
-        sendDataToESP(formData); // Envia os dados do cadastro ao ESP8266
+        sendDataToESP(formData); 
     };
 
     const resetForm = () => {
